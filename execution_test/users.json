@@ -9,24 +9,6 @@
   "data": [
     [
       1,
-      "Alice Johnson",
-      "alice@example.com",
-      28
-    ],
-    [
-      2,
-      "Bob Smith",
-      "bob@example.com",
-      35
-    ],
-    [
-      3,
-      "Charlie Brown",
-      "charlie@example.com",
-      22
-    ],
-    [
-      1,
       "Alice",
       "alice@example.com",
       28
