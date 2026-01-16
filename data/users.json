@@ -3,45 +3,23 @@
   "columns": [
     "id",
     "name",
-    "email",
-    "age"
+    "email"
   ],
   "data": [
     [
       1,
-      "Alice Johnson",
-      "alice@example.com",
-      28
-    ],
-    [
-      2,
-      "Bob Smith",
-      "bob@example.com",
-      35
-    ],
-    [
-      3,
-      "Charlie Brown",
-      "charlie@example.com",
-      22
-    ],
-    [
-      1,
       "Alice",
-      "alice@example.com",
-      28
+      "alice@example.com"
     ],
     [
       2,
       "Bob",
-      "bob@example.com",
-      35
+      "bob@example.com"
     ],
     [
       3,
       "Charlie",
-      "charlie@example.com",
-      22
+      "charlie@example.com"
     ]
   ]
 }
