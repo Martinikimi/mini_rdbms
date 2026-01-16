@@ -11,6 +11,10 @@ class Database:
     
     def create_table(self, table_name, columns):
         """Create a new table."""
+        # FIX 1: Validate table name
+        if not table_name.isidentifier():
+            return f"Error: Table name '{table_name}' is invalid. Table names must start with a letter or underscore and contain only letters, numbers, or underscores."
+        
         table_file = os.path.join(self.data_dir, f"{table_name}.json")
         
         if os.path.exists(table_file):
@@ -36,6 +40,14 @@ class Database:
         
         with open(table_file, 'r') as f:
             table = json.load(f)
+        
+        # FIX 2: Validate column count
+        expected_columns = len(table["columns"])
+        received_values = len(values)
+        
+        if received_values != expected_columns:
+            column_names = ", ".join(table["columns"])
+            return f"Error: Table '{table_name}' has {expected_columns} columns ({column_names}), but {received_values} values were provided."
         
         table["data"].append(values)
         
