@@ -1,40 +1,54 @@
-"""Test Phase 1 Parser - Only CREATE TABLE
 """
-from src.parser import parse_sql
+Test that actually EXECUTES SQL commands
+"""
+import os
+import shutil
+from src.executor import SQLExecutor
 
-print("Testing Parser - PHASE 1 (CREATE TABLE only)")
+print("Testing SQL EXECUTION")
 print("=" * 50)
 
+# Clean test directory
+test_dir = "execution_test"
+if os.path.exists(test_dir):
+    shutil.rmtree(test_dir)
+
+# Create executor
+executor = SQLExecutor(test_dir)
+
 test_cases = [
-    # Should work
-    ("CREATE TABLE users (id, name, email)", True),
-    ("CREATE TABLE products (id, name, price)", True),
-    
-    # not implemented yet
-    ("INSERT INTO users VALUES (1, 'Alice')", False),
-    ("SELECT * FROM users", False),
-    
-    # bad syntax
-    ("CREATE TABLE", False),
-    ("CREATE TABLE users", False),
-    ("CREATE TABLE users id, name", False),
+    "CREATE TABLE users (id, name, email)",
+    "CREATE TABLE products (id, name, price, category)",
+    "INSERT INTO users VALUES (1, 'Alice', 'alice@example.com')",
+    "INSERT INTO users VALUES (2, 'Bob', 'bob@example.com')",
+    "INSERT INTO products VALUES (101, 'Laptop', 999.99, 'Electronics')",
 ]
 
-for sql, should_work in test_cases:
-    print(f"\nCommand: {sql}")
-    result = parse_sql(sql)
-    
-    if "error" in result:
-        print(f"  Result: ERROR - {result['error']}")
-        if should_work:
-            print(f"   UNEXPECTED: Should have worked!")
-    else:
-        print(f"  Result: SUCCESS")
-        print(f"  Action: {result['action']}")
-        print(f"  Table: {result['table_name']}")
-        print(f"  Columns: {result['columns']}")
-        if not should_work:
-            print(f"   UNEXPECTED: Should have failed!")
+print(f"Test database location: {test_dir}/")
+print("=" * 50)
 
+for i, sql in enumerate(test_cases, 1):
+    print(f"\n{i}. Executing: {sql}")
+    result = executor.execute(sql)
+    print(f"   Result: {result}")
+
+# Show what was actually created
 print("\n" + "=" * 50)
-print("Phase 1 complete: Parser understands CREATE TABLE")
+print("Files created:")
+print("=" * 50)
+
+if os.path.exists(test_dir):
+    files = os.listdir(test_dir)
+    if files:
+        for file in files:
+            filepath = os.path.join(test_dir, file)
+            size = os.path.getsize(filepath)
+            print(f"  - {file} ({size} bytes)")
+    else:
+        print("  No files created")
+
+# Clean up
+shutil.rmtree(test_dir)
+print(f"\nCleaned up {test_dir}/")
+print("=" * 50)
+print("Test complete")
