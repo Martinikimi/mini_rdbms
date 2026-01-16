@@ -1,7 +1,29 @@
+﻿# Python
 __pycache__/
-*.pyc
-data/*.json
+*.py[cod]
+*.class
+*.so
+.Python
+*.egg-info/
+*.egg
+
+# Virtual Environment
 .env
-.venv/
+.venv
+env/
+venv/
+ENV/
+
+# Database files
+data/*.json
+data/*.db
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
