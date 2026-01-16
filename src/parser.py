@@ -46,26 +46,182 @@ def parse_sql(sql_command):
 def _parse_create_table(sql):
     """
     Parse: CREATE TABLE table_name (col1, col2, ...)
+    OR: CREATE TABLE table_name (col1 TYPE [CONSTRAINTS], col2 TYPE [CONSTRAINTS], ...)
+    
+    Supports both old style (no types) and new style (with types)
     """
-    # Use regex for better parsing
+    # Pattern: CREATE TABLE name (col1 TYPE, col2 TYPE CONSTRAINT, ...)
     pattern = r"CREATE TABLE (\w+)\s*\((.*)\)"
     match = re.match(pattern, sql, re.IGNORECASE)
     
     if not match:
-        return {"error": "Invalid CREATE TABLE syntax. Use: CREATE TABLE name (col1, col2, ...)"}
+        return {"error": "Invalid CREATE TABLE syntax. Use: CREATE TABLE name (col1, col2, ...) or CREATE TABLE name (col1 TYPE, col2 TYPE, ...)"}
     
     table_name = match.group(1)
     columns_str = match.group(2)
     
+    # Try to parse as new style (with data types) first
+    result = _parse_columns_with_types(columns_str)
+    if "columns" in result:
+        # New style succeeded
+        return {
+            "action": "create_table",
+            "table_name": table_name,
+            "columns": result["columns"],
+            "has_types": True
+        }
+    else:
+        # If that fails, try old style (just column names)
+        return _parse_columns_old_style(table_name, columns_str)
+
+
+def _parse_columns_with_types(columns_str):
+    """
+    Parse columns with data types: id INT PRIMARY KEY, name VARCHAR(50), ...
+    """
+    columns = []
+    column_defs = []
+    
+    # Split by commas, but handle nested parentheses (for DECIMAL(10,2))
+    current = ""
+    paren_depth = 0
+    
+    for char in columns_str:
+        if char == '(':
+            paren_depth += 1
+            current += char
+        elif char == ')':
+            paren_depth -= 1
+            current += char
+        elif char == ',' and paren_depth == 0:
+            column_defs.append(current.strip())
+            current = ""
+        else:
+            current += char
+    
+    if current.strip():
+        column_defs.append(current.strip())
+    
+    for col_def in column_defs:
+        if not col_def:
+            continue
+            
+        # Parse: "id INT PRIMARY KEY" or "name VARCHAR(50) NOT NULL"
+        parts = col_def.strip().split()
+        if len(parts) < 2:
+            return {"error": f"Invalid column definition: {col_def}. Need: name TYPE [constraints]"}
+        
+        col_name = parts[0]
+        col_type = parts[1].upper()
+        
+        # Check for VARCHAR - must have parentheses
+        if col_type == "VARCHAR":
+            return {"error": f"VARCHAR must specify length: VARCHAR(n)"}
+        
+        # Handle types with parameters: VARCHAR(50), DECIMAL(10,2)
+        type_params = []
+        if '(' in col_type:
+            # Extract type name and parameters
+            type_parts = col_type.split('(')
+            base_type = type_parts[0]
+            params_str = type_parts[1].rstrip(')')
+            
+            if base_type == "VARCHAR":
+                try:
+                    max_length = int(params_str)
+                    col_type = f"VARCHAR({max_length})"
+                    type_params = [max_length]
+                except ValueError:
+                    return {"error": f"Invalid VARCHAR length: {params_str}"}
+            elif base_type == "DECIMAL":
+                try:
+                    if ',' in params_str:
+                        precision, scale = map(int, params_str.split(','))
+                    else:
+                        precision = int(params_str)
+                        scale = 0
+                    col_type = f"DECIMAL({precision},{scale})"
+                    type_params = [precision, scale]
+                except:
+                    return {"error": f"Invalid DECIMAL parameters: {params_str}"}
+            else:
+                return {"error": f"Unsupported parameterized type: {base_type}"}
+        else:
+            # Simple type without parameters
+            base_type = col_type
+        
+        # Parse constraints (PRIMARY KEY, UNIQUE, NOT NULL)
+        constraints = []
+        i = 2  # Start after column name and type
+        
+        while i < len(parts):
+            constraint = parts[i].upper()
+            
+            if constraint == "PRIMARY":
+                if i + 1 < len(parts) and parts[i + 1].upper() == "KEY":
+                    constraints.append("PRIMARY KEY")
+                    i += 2
+                else:
+                    constraints.append("PRIMARY")
+                    i += 1
+            elif constraint == "NOT":
+                if i + 1 < len(parts) and parts[i + 1].upper() == "NULL":
+                    constraints.append("NOT NULL")
+                    i += 2
+                else:
+                    constraints.append("NOT")
+                    i += 1
+            elif constraint in ["UNIQUE", "NULL"]:
+                constraints.append(constraint)
+                i += 1
+            else:
+                # Unknown word - might be part of type name (e.g., "DOUBLE PRECISION")
+                # For now, skip it
+                i += 1
+        
+        # Validate type
+        valid_types = ["INT", "INTEGER", "VARCHAR", "TEXT", "STRING", "DECIMAL", "NUMERIC", "FLOAT", "REAL", "BOOLEAN", "BOOL", "DATE", "DATETIME"]
+        
+        if base_type not in valid_types:
+            return {"error": f"Unsupported data type: {col_type}. Supported: {', '.join(valid_types)}"}
+        
+        columns.append({
+            "name": col_name,
+            "type": col_type,
+            "type_params": type_params,
+            "constraints": constraints
+        })
+    
+    if not columns:
+        return {"error": "No columns specified"}
+    
+    return {"columns": columns}
+
+
+def _parse_columns_old_style(table_name, columns_str):
+    """
+    Parse old style columns: just column names without types
+    """
     columns = [col.strip() for col in columns_str.split(',') if col.strip()]
     
     if not columns:
         return {"error": "No columns specified"}
     
+    # Convert old style to new style format (with generic "TEXT" type)
+    typed_columns = []
+    for col_name in columns:
+        typed_columns.append({
+            "name": col_name,
+            "type": "TEXT",  # Default type for old syntax
+            "type_params": [],
+            "constraints": []
+        })
+    
     return {
         "action": "create_table",
         "table_name": table_name,
-        "columns": columns
+        "columns": typed_columns,
+        "has_types": True  # Still mark as having types, just default ones
     }
 
 
