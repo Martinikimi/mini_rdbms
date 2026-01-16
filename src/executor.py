@@ -1,13 +1,16 @@
 """
 SQL Executor - Connects parser to database
-Supports: CREATE TABLE, INSERT, SELECT, DROP TABLE
+Supports: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE
 """
 from src.database import Database
 from src.parser import parse_sql
+import os
+import json
 
 class SQLExecutor:
     def __init__(self, data_dir="data"):
         self.db = Database(data_dir)
+        self.data_dir = data_dir
     
     def execute(self, sql_command):
         """
@@ -18,6 +21,8 @@ class SQLExecutor:
         - INSERT INTO table_name VALUES (val1, val2, ...)
         - SELECT * FROM table_name
         - SELECT col1, col2 FROM table_name
+        - UPDATE table_name SET column=value WHERE condition
+        - DELETE FROM table_name WHERE condition
         - DROP TABLE table_name
         """
         # 1. Parse the SQL
@@ -36,6 +41,11 @@ class SQLExecutor:
             )
         
         elif action == "insert":
+            # Check if table exists before inserting
+            table_file = os.path.join(self.data_dir, f"{parsed['table_name']}.json")
+            if not os.path.exists(table_file):
+                return f"Error: Cannot insert into table '{parsed['table_name']}' - table doesn't exist"
+            
             return self.db.insert(
                 parsed["table_name"],
                 parsed["values"]
@@ -49,14 +59,17 @@ class SQLExecutor:
             return rows
         
         elif action == "select_columns":
-            # For now, just select all (filter columns later)
-            rows = self.db.select_all(parsed["table_name"])
-            if rows is None:
+            # Check if table exists first
+            table_file = os.path.join(self.data_dir, f"{parsed['table_name']}.json")
+            if not os.path.exists(table_file):
                 return f"Error: Table '{parsed['table_name']}' doesn't exist"
             
-            # Basic column filtering (optional enhancement)
+            # Get all rows from table
+            rows = self.db.select_all(parsed["table_name"])
+            
+            # Basic column filtering
             if parsed["columns"] != ["*"]:
-                # Simple column filtering - can improve later
+                # Simple column filtering
                 column_indices = []
                 table_info = self._get_table_info(parsed["table_name"])
                 if table_info:
@@ -70,8 +83,34 @@ class SQLExecutor:
                         filtered_row = [row[i] for i in column_indices]
                         filtered_rows.append(filtered_row)
                     return filtered_rows
+                else:
+                    # No valid columns specified
+                    return f"Error: Column(s) {parsed['columns']} not found in table '{parsed['table_name']}'"
             
             return rows
+        
+        elif action == "update":
+            # Check if table exists
+            table_file = os.path.join(self.data_dir, f"{parsed['table_name']}.json")
+            if not os.path.exists(table_file):
+                return f"Error: Table '{parsed['table_name']}' doesn't exist"
+            
+            return self.db.update(
+                parsed["table_name"],
+                parsed["updates"],
+                parsed["where"]
+            )
+        
+        elif action == "delete":
+            # Check if table exists
+            table_file = os.path.join(self.data_dir, f"{parsed['table_name']}.json")
+            if not os.path.exists(table_file):
+                return f"Error: Table '{parsed['table_name']}' doesn't exist"
+            
+            return self.db.delete(
+                parsed["table_name"],
+                parsed["where"]
+            )
         
         elif action == "drop_table":
             # Check if drop_table method exists
@@ -88,10 +127,7 @@ class SQLExecutor:
         Helper to get table column information.
         Used for SELECT column filtering.
         """
-        import os
-        import json
-        
-        table_file = os.path.join(self.db.data_dir, f"{table_name}.json")
+        table_file = os.path.join(self.data_dir, f"{table_name}.json")
         if not os.path.exists(table_file):
             return None
         

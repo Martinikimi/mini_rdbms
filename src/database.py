@@ -1,6 +1,6 @@
 """
 Database Engine for mini_rdbms
-Core database operations: CREATE TABLE, INSERT, SELECT, DROP TABLE
+Core database operations: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE
 """
 import json
 import os
@@ -65,12 +65,133 @@ class Database:
         table_file = os.path.join(self.data_dir, f"{table_name}.json")
         
         if not os.path.exists(table_file):
-            return []
+            return None
         
         with open(table_file, 'r') as f:
             table = json.load(f)
         
         return table["data"]
+    
+    def update(self, table_name, updates, where_clause=None):
+        """Update rows in a table."""
+        table_file = os.path.join(self.data_dir, f"{table_name}.json")
+        
+        if not os.path.exists(table_file):
+            return f"Error: Table '{table_name}' doesn't exist"
+        
+        # Load table data
+        with open(table_file, 'r') as f:
+            table = json.load(f)
+        
+        # Get column indices
+        columns = table["columns"]
+        column_indices = {col: idx for idx, col in enumerate(columns)}
+        
+        # Check if update columns exist
+        for col in updates.keys():
+            if col not in columns:
+                return f"Error: Column '{col}' doesn't exist in table '{table_name}'"
+        
+        updated_count = 0
+        
+        # Update rows
+        for row in table["data"]:
+            # Check WHERE condition
+            should_update = True
+            if where_clause:
+                # Parse WHERE clause
+                # Support: column='value' or column=value
+                if '=' in where_clause:
+                    # Split by = but be careful with quotes
+                    parts = where_clause.split('=', 1)
+                    col_name = parts[0].strip()
+                    
+                    # Get value, removing quotes
+                    val = parts[1].strip()
+                    if (val.startswith("'") and val.endswith("'")) or \
+                       (val.startswith('"') and val.endswith('"')):
+                        val = val[1:-1]
+                    
+                    if col_name in column_indices:
+                        # Compare values
+                        row_value = row[column_indices[col_name]]
+                        if str(row_value) != str(val):
+                            should_update = False
+                    else:
+                        return f"Error: Column '{col_name}' in WHERE clause doesn't exist"
+                else:
+                    return f"Error: Invalid WHERE clause. Use: column=value"
+            
+            if should_update:
+                # Apply updates
+                for col, new_val in updates.items():
+                    idx = column_indices[col]
+                    row[idx] = new_val
+                updated_count += 1
+        
+        # Save updated table
+        with open(table_file, 'w') as f:
+            json.dump(table, f, indent=2)
+        
+        return f"Updated {updated_count} row(s) in '{table_name}'"
+    
+    def delete(self, table_name, where_clause=None):
+        """Delete rows from a table."""
+        table_file = os.path.join(self.data_dir, f"{table_name}.json")
+        
+        if not os.path.exists(table_file):
+            return f"Error: Table '{table_name}' doesn't exist"
+        
+        # Load table data
+        with open(table_file, 'r') as f:
+            table = json.load(f)
+        
+        # If no WHERE clause, delete all rows
+        if where_clause is None:
+            deleted_count = len(table["data"])
+            table["data"] = []
+        else:
+            # Parse WHERE clause
+            # Support: column='value' or column=value
+            if '=' in where_clause:
+                # Split by = but be careful with quotes
+                parts = where_clause.split('=', 1)
+                col_name = parts[0].strip()
+                
+                # Get value, removing quotes
+                val = parts[1].strip()
+                if (val.startswith("'") and val.endswith("'")) or \
+                   (val.startswith('"') and val.endswith('"')):
+                    val = val[1:-1]
+                
+                # Get column indices
+                columns = table["columns"]
+                column_indices = {col: idx for idx, col in enumerate(columns)}
+                
+                if col_name not in column_indices:
+                    return f"Error: Column '{col_name}' in WHERE clause doesn't exist"
+                
+                col_idx = column_indices[col_name]
+                
+                # Filter rows to keep (opposite of WHERE condition)
+                new_data = []
+                deleted_count = 0
+                
+                for row in table["data"]:
+                    if str(row[col_idx]) == str(val):
+                        deleted_count += 1
+                    else:
+                        new_data.append(row)
+                
+                table["data"] = new_data
+            else:
+                return f"Error: Invalid WHERE clause. Use: column=value"
+        
+        # Save updated table
+        with open(table_file, 'w') as f:
+            json.dump(table, f, indent=2)
+        
+        return f"Deleted {deleted_count} row(s) from '{table_name}'"
     
     def drop_table(self, table_name):
         """
