@@ -1,0 +1,35 @@
+{
+  "name": "products",
+  "columns": [
+    "product_id",
+    "name",
+    "price",
+    "category"
+  ],
+  "data": [
+    [
+      101,
+      "Laptop",
+      999.99,
+      "Electronics"
+    ],
+    [
+      102,
+      "Mouse",
+      29.99,
+      "Accessories"
+    ],
+    [
+      103,
+      "Keyboard",
+      79.99,
+      "Accessories"
+    ],
+    [
+      104,
+      "Monitor",
+      299.99,
+      "Electronics"
+    ]
+  ]
+}

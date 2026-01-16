@@ -14,9 +14,6 @@ env/
 venv/
 ENV/
 
-# Database files
-data/*.json
-data/*.db
 
 # IDE
 .vscode/
