@@ -1,13 +1,13 @@
 """
 SQL Parser for mini_rdbms
-Supports: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE
+Supports: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE, JOIN
 """
 import re
 
 def parse_sql(sql_command):
     """
     Parse SQL commands.
-    Supports: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE
+    Supports: CREATE TABLE, INSERT, SELECT, UPDATE, DELETE, DROP TABLE, JOIN
     """
     sql = sql_command.strip()
     if not sql:
@@ -249,40 +249,72 @@ def _parse_insert(sql):
         "values": values
     }
 
-
 def _parse_select(sql):
     """
-    Parse: SELECT * FROM table_name
-    Also handles: SELECT column1, column2 FROM table_name (basic)
+    Parse SELECT queries including:
+    - SELECT * FROM table [WHERE condition]
+    - SELECT columns FROM table [WHERE condition]  
+    - SELECT * FROM table1 INNER JOIN table2 ON condition
     """
-    # Simple SELECT * FROM table
-    pattern_simple = r"SELECT \*\s+FROM\s+(\w+)"
-    match = re.match(pattern_simple, sql, re.IGNORECASE)
+    # First check for JOIN pattern
+    pattern_join = r"SELECT (.+)\s+FROM\s+(\w+)\s+INNER JOIN\s+(\w+)\s+ON\s+(.+?)(?:\s+WHERE\s+(.+))?$"
+    match = re.match(pattern_join, sql, re.IGNORECASE)
     
     if match:
+        columns_str = match.group(1).strip()
+        table1 = match.group(2).strip()
+        table2 = match.group(3).strip()
+        join_condition = match.group(4).strip()
+        where_clause = match.group(5).strip() if match.group(5) else None
+        
+        # Parse columns
+        if columns_str == "*":
+            columns = "*"
+        else:
+            columns = [col.strip() for col in columns_str.split(',')]
+        
         return {
-            "action": "select_all",
-            "table_name": match.group(1),
-            "columns": "*"
+            "action": "select_join",
+            "tables": [table1, table2],
+            "columns": columns,
+            "join_condition": join_condition,
+            "join_type": "INNER",
+            "where": where_clause
         }
     
-    # SELECT specific columns
-    pattern_cols = r"SELECT (.+)\s+FROM\s+(\w+)"
+    # Pattern for SELECT * FROM table WHERE condition
+    pattern_all = r"SELECT \*\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+))?$"
+    match = re.match(pattern_all, sql, re.IGNORECASE)
+    
+    if match:
+        table_name = match.group(1)
+        where_clause = match.group(2).strip() if match.group(2) else None
+        return {
+            "action": "select_all",
+            "table_name": table_name,
+            "columns": "*",
+            "where": where_clause
+        }
+    
+    # Pattern for SELECT columns FROM table WHERE condition
+    pattern_cols = r"SELECT (.+)\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+))?$"
     match = re.match(pattern_cols, sql, re.IGNORECASE)
     
     if match:
         columns_str = match.group(1)
         table_name = match.group(2)
+        where_clause = match.group(3).strip() if match.group(3) else None
         
         columns = [col.strip() for col in columns_str.split(',') if col.strip()]
         
         return {
             "action": "select_columns",
             "table_name": table_name,
-            "columns": columns
+            "columns": columns,
+            "where": where_clause
         }
     
-    return {"error": "Invalid SELECT syntax. Use: SELECT * FROM table_name"}
+    return {"error": "Invalid SELECT syntax. Use: SELECT * FROM table_name [WHERE condition] or SELECT * FROM table1 INNER JOIN table2 ON condition"}
 
 
 def _parse_update(sql):

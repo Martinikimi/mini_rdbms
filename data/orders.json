@@ -1,9 +1,0 @@
-{
-  "name": "orders",
-  "columns": [
-    "order_id",
-    "user_id",
-    "total"
-  ],
-  "data": []
-}
