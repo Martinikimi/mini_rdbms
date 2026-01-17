@@ -1,0 +1,52 @@
+{
+  "name": "todos",
+  "columns": [
+    "id",
+    "task",
+    "completed"
+  ],
+  "column_definitions": [
+    {
+      "name": "id",
+      "type": "INT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "task",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "completed",
+      "type": "BOOLEAN",
+      "type_params": [],
+      "constraints": []
+    }
+  ],
+  "data": [
+    [
+      1,
+      "Learn about databases",
+      true
+    ],
+    [
+      2,
+      "Build a mini RDBMS",
+      true
+    ],
+    [
+      3,
+      "Create a web app demo",
+      false
+    ],
+    [
+      5,
+      "eat",
+      true
+    ]
+  ],
+  "indexes": {},
+  "created_at": "2026-01-17T14:54:49.679737"
+}
