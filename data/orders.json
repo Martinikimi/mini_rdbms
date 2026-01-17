@@ -1,0 +1,38 @@
+{
+  "name": "orders",
+  "columns": [
+    "order_id",
+    "customer_id",
+    "amount",
+    "order_date;"
+  ],
+  "column_definitions": [
+    {
+      "name": "order_id",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "customer_id",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "amount",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "order_date;",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    }
+  ],
+  "data": [],
+  "indexes": {},
+  "created_at": "2026-01-17T19:59:41.057424"
+}

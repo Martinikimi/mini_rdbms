@@ -1,0 +1,31 @@
+{
+  "name": "todos",
+  "columns": [
+    "id",
+    "task",
+    "completed"
+  ],
+  "column_definitions": [
+    {
+      "name": "id",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "task",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "completed",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    }
+  ],
+  "data": [],
+  "indexes": {},
+  "created_at": "2026-01-17T19:52:41.703726"
+}

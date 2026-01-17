@@ -1,0 +1,31 @@
+{
+  "name": "customers",
+  "columns": [
+    "customer_id",
+    "name",
+    "email;"
+  ],
+  "column_definitions": [
+    {
+      "name": "customer_id",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "name",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    },
+    {
+      "name": "email;",
+      "type": "TEXT",
+      "type_params": [],
+      "constraints": []
+    }
+  ],
+  "data": [],
+  "indexes": {},
+  "created_at": "2026-01-17T19:59:41.020482"
+}
