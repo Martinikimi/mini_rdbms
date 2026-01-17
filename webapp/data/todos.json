@@ -27,11 +27,6 @@
   ],
   "data": [
     [
-      1,
-      "Learn about databases",
-      true
-    ],
-    [
       2,
       "Build a mini RDBMS",
       true
@@ -42,9 +37,14 @@
       false
     ],
     [
+      4,
+      "Update Readme.md",
+      false
+    ],
+    [
       5,
-      "eat",
-      true
+      "complete project",
+      false
     ]
   ],
   "indexes": {},
